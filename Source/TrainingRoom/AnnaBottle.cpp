@@ -36,6 +36,7 @@ void UAnnaBottle::Execute(AActor* Instigator)
 		Spec.SkillType = ESkillTargetType::STT_AOE;
 		Spec.SkillLifetimeMode = ESkillLifetimeMode::ESM_Instant;
 		Spec.Radius = 300.f;
+		Spec.Damage = 50.f;
 		Bottle->InitSkill(Spec);
 		if (USkillComponent* SkillComp = Instigator->FindComponentByClass<USkillComponent>())
 		{

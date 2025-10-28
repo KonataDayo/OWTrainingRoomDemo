@@ -3,6 +3,8 @@
 #include "Engine/EngineTypes.h"
 #include "SkillBase.generated.h"
 
+class USkillFactory;
+class USkillDataAsset;
 DECLARE_MULTICAST_DELEGATE(FOnCooldownIsOver)
 
 UENUM(BlueprintType)
@@ -43,13 +45,20 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE ESkillSlot GetSkillType() const;
 
+	void Initialization(USkillDataAsset* SDA);
+
 protected:
 
+	UPROPERTY()
+	USkillFactory* SkillFactory;
+
+	UPROPERTY()
+	USkillDataAsset* SkillData;
+
+	/*
 	UPROPERTY(EditAnywhere,Category="Skill")
 	float CooldownTime;
 
-	UPROPERTY()
-	bool bCanExecute = true;
 
 	UPROPERTY(EditAnywhere)
 	bool bStackable;
@@ -57,11 +66,13 @@ protected:
 	UPROPERTY(EditAnywhere,meta=(EditCondition="bStackable"))
 	int32 MaxStacks = 3;
 
-	int32 CurrentStacks;
-
 	UPROPERTY(EditAnywhere,Category="Skill")
 	ESkillSlot SkillType;
+	*/
+	int32 CurrentStacks;
 
+	UPROPERTY()
+	bool bCanExecute = true;
 private:
 	UFUNCTION()
 	void SetSkillReady();

@@ -1,0 +1,2 @@
+#include "SkillDataAsset.h"
+

@@ -5,6 +5,8 @@
 #include "SkillBase.h"
 #include "GameFramework/Actor.h"
 #include "HeroCharacter.h"
+#include "SkillDataAsset.h"
+#include "SkillFactory.h"
 
 USkillComponent::USkillComponent()
 {
@@ -16,17 +18,20 @@ void USkillComponent::TryActivateSkill(AActor* Instigator ,ESkillSlot SkillSlot)
 	UE_LOG(LogTemp,Warning,TEXT("TryActivate"));
 	if (Skills.Contains(SkillSlot))
 	{
-		USkillBase* SkillToActivate = Skills[SkillSlot];
-		if (SkillToActivate->CanExecute())
+		if (USkillBase* SkillToActivate = Skills[SkillSlot])
 		{
-			SkillToActivate->Execute(Instigator);
+			if (SkillToActivate->CanExecute())
+			{
+				SkillToActivate->Execute(Instigator);
+			}
+			else UE_LOG(LogTemp, Warning, TEXT("Skill isn't ready yet"));
 		}
-		else UE_LOG(LogTemp, Warning, TEXT("Skill isn't ready yet"));
 	}
 }
 
 void USkillComponent::SkillInitialization()
 {
+	/*
 	if (!Primary || !Secondary || !Ultimate) return;
 	if (USkillBase* pri = NewObject<USkillBase>(this,Primary)) Skills.Add(ESkillSlot::ESS_Primary,pri);
 	if (USkillBase* sec = NewObject<USkillBase>(this,Secondary)) Skills.Add(ESkillSlot::ESS_Secondary,sec);
@@ -35,11 +40,26 @@ void USkillComponent::SkillInitialization()
 	{
 		Pair.Value->RefreshSkill();
 	}
+	*/
+	// TODO: Call Factory Method to create instances of skills to fill up the Map
+	if (!SkillFactory) return;
+	if (!PrimarySkillData || !SecondarySkillData || !UltimateSkillData)
+	{
+		UE_LOG(LogTemp,Warning,TEXT("[%s]Skill Data Missing!"),*GetName());
+		return;
+	}
+	if (USkillBase* pri = SkillFactory->CreateSkillInstanceFromData(this,PrimarySkillData)) Skills.Add(ESkillSlot::ESS_Primary,pri);
+	if (USkillBase* sec = SkillFactory->CreateSkillInstanceFromData(this, SecondarySkillData)) Skills.Add(ESkillSlot::ESS_Secondary, sec);
+	if (USkillBase* ult = SkillFactory->CreateSkillInstanceFromData(this, UltimateSkillData)) Skills.Add(ESkillSlot::ESS_Ultimate, ult);
 }
 
 void USkillComponent::BeginPlay()
 {
 	Super::BeginPlay();
+	if (!SkillFactory)
+	{
+		SkillFactory = NewObject<USkillFactory>(this);
+	}
 	SkillInitialization();
 }
 

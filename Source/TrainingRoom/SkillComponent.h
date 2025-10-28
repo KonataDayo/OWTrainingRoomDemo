@@ -5,6 +5,7 @@
 #include "Components/ActorComponent.h"
 #include "SkillComponent.generated.h"
 
+class USkillFactory;
 enum class ESkillSlot : uint8;
 class AProjectile;
 class USkillBase;
@@ -17,16 +18,27 @@ class TRAININGROOM_API USkillComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
+	UPROPERTY()
+	USkillFactory* SkillFactory;
+
 public:	
 
-	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category = "SkillSlot")
-	TSubclassOf<USkillBase> Primary;
+	//UPROPERTY(EditAnywhere,BlueprintReadWrite,Category = "SkillSlot")
+	//TSubclassOf<USkillBase> Primary;
+	//UPROPERTY(EditAnywhere,BlueprintReadWrite ,Category = "SkillSlot")
+	//TSubclassOf<USkillBase> Secondary;
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "SkillSlot")
+	//TSubclassOf<USkillBase> Ultimate;
 
-	UPROPERTY(EditAnywhere,BlueprintReadWrite ,Category = "SkillSlot")
-	TSubclassOf<USkillBase> Secondary;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillSlot")
+	TSubclassOf<class USkillDataAsset> PrimarySkillData; 
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "SkillSlot")
-	TSubclassOf<USkillBase> Ultimate;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillSlot")
+	TSubclassOf<USkillDataAsset> SecondarySkillData;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillSlot")
+	TSubclassOf<USkillDataAsset> UltimateSkillData;
+
 	// Sets default values for this component's properties
 	USkillComponent();
 
@@ -47,10 +59,10 @@ public:
 
 	bool ShouldApplyTo(AActor* Instigator ,AActor* Target,const FSkillSpec& Spec);
 
+	// TODO
 	TSet<AActor*> DetectInstantSkillTargets(AActor* Instigator, AActor* HitActor,FVector HitLocation , const FSkillSpec& SkillSpec);
 
 	void ProcessDetectedTargets(const TSet<AActor*>& Targets, const FSkillSpec& SkillSpec);
-
 
 	void SkillInitialization();
 protected:
