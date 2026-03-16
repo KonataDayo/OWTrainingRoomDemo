@@ -31,17 +31,6 @@ void USkillComponent::TryActivateSkill(AActor* Instigator ,ESkillSlot SkillSlot)
 
 void USkillComponent::SkillInitialization()
 {
-	/*
-	if (!Primary || !Secondary || !Ultimate) return;
-	if (USkillBase* pri = NewObject<USkillBase>(this,Primary)) Skills.Add(ESkillSlot::ESS_Primary,pri);
-	if (USkillBase* sec = NewObject<USkillBase>(this,Secondary)) Skills.Add(ESkillSlot::ESS_Secondary,sec);
-	if (USkillBase* ult = NewObject<USkillBase>(this,Ultimate)) Skills.Add(ESkillSlot::ESS_Ultimate,ult);
-	for (const TPair<ESkillSlot,USkillBase*>& Pair : Skills)
-	{
-		Pair.Value->RefreshSkill();
-	}
-	*/
-	// TODO: Call Factory Method to create instances of skills to fill up the Map
 	if (!SkillFactory) return;
 	if (!PrimarySkillData || !SecondarySkillData || !UltimateSkillData)
 	{
@@ -144,7 +133,9 @@ void USkillComponent::ProcessProjectileOverlap(AProjectile* Projectile, UPrimiti
 		
 	}
 
-	// Destroy Projectile On Time
+	// Remove Binding (Projectiles in object pool)
+	UE_LOG(LogTemp,Warning,TEXT("%s Remove Binding"),*Projectile->GetName());
+	Projectile->OnSkillProjectileActivate.RemoveAll(this);
 }
 
 bool USkillComponent::ShouldApplyTo(AActor* Instigator ,AActor* Target, const FSkillSpec& Spec)

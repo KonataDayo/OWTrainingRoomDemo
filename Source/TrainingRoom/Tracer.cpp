@@ -10,11 +10,17 @@ void ATracer::UpdateRecallInfo(float DeltaTime)
 {
 	if (!GetSkillComponent() || !GetSkillComponent()->Skills.Find(ESkillSlot::ESS_Primary))
 	{
-		UE_LOG(LogTemp,Warning,TEXT("Cannot find RECALL!"));
+		UE_LOG(LogTemp,Warning,TEXT("[%s] Cannot find RECALL!"),*GetName());
 		return;
 	}
-	UTracerRecall* RecallComp = Cast<UTracerRecall>(GetSkillComponent()->Skills[ESkillSlot::ESS_Primary]);
-	if (!RecallComp) return;
+	UTracerRecall* RecallComp = Cast<UTracerRecall>(GetSkillComponent()->Skills[ESkillSlot::ESS_Secondary]);
+	if (!RecallComp) 
+	{
+#if WITH_EDITOR
+		UE_LOG(LogTemp,Error,TEXT("[%S] Cannot cast/find Recall Skill"),*GetName());
+		return;
+#endif
+	}
 	TimeSinceLastSampled += DeltaTime;
 	if (TimeSinceLastSampled >= SampleInterval)
 	{
@@ -56,5 +62,6 @@ void ATracer::ResetRecallTimer()
 
 ATracer::ATracer()
 {
+	PrimaryActorTick.bCanEverTick = true;
 	MAX_INFO_SIZE = 3.f / SampleInterval;
 }

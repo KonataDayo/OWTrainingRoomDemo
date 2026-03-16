@@ -1,6 +1,7 @@
 #include "AnnaBottle.h"
 #include "Anna.h"
 #include "Projectile.h"
+#include "ProjectilePoolSubsystem.h"
 #include "Components/BoxComponent.h"
 #include "Engine/World.h"
 #include "GameFramework/Controller.h"
@@ -17,7 +18,6 @@ void UAnnaBottle::Execute(AActor* Instigator)
 	UWorld* World = Instigator->GetWorld();
 	AController* HeroController = Instigator->GetInstigatorController();
 	if (!World || !HeroController) return;
-
 	// Spawning Projectile
 	FVector StartLocation;
 	FRotator ThrowRotation;
@@ -32,6 +32,7 @@ void UAnnaBottle::Execute(AActor* Instigator)
 		Bottle->SetIsSkill(true);
 		// effect call
 		// TODO: Stop spawning projectiles manually, should use a factory method to make our code tidy and neat!!
+		
 		FSkillSpec Spec;
 		Spec.SkillType = ESkillTargetType::STT_AOE;
 		Spec.SkillLifetimeMode = ESkillLifetimeMode::ESM_Instant;

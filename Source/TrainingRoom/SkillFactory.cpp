@@ -9,7 +9,7 @@ USkillBase* USkillFactory::CreateSkillInstanceFromData(UObject* Outer, TSubclass
 		UE_LOG(LogTemp,Error,TEXT("[SkillFactory]Failed to create skill instance"));
 		return nullptr;
 	}
-	if (auto SkillDataCDO = SkillData.GetDefaultObject())
+	if (USkillDataAsset* SkillDataCDO = SkillData.GetDefaultObject())
 	{
 		FSkillSpec SkillSpec = SkillDataCDO->SkillSpec;
 		auto Skill = SkillDataCDO->Skill;

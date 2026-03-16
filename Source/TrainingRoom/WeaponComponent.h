@@ -1,6 +1,7 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "DamageStruct.h"
+#include "Weapon.h"
 #include "Components/ActorComponent.h"
 #include "WeaponComponent.generated.h"
 
@@ -22,16 +23,6 @@ class TRAININGROOM_API UWeaponComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, Category = "WeaponAttributes")
-	float FireInterval;
-
-	float TimeSinceLastFire = 0.f;
-
-	UPROPERTY(EditAnywhere, Category = "WeaponAttributes")
-	float ReloadTime;
-
-	bool bCanFire = true;
-
 	UPROPERTY()
 	UWeapon* Weapon;
 
@@ -41,11 +32,15 @@ class TRAININGROOM_API UWeaponComponent : public UActorComponent
 	UPROPERTY()
 	class UDamageSystem* CachedDamageSubsystem;
 
+	UPROPERTY()
+	class UObjectPoolSubsystem* CachedObjectPoolSubsystem;
+
 	void ProcessHit(AActor* Instigator,FWeaponFireResult Result);
 
-	void AmmoManage();
+	void AmmoManage(EFireMode FireMode);
 
-	
+	void OnFireCooldownFinished(AActor* Instigator, EFireMode FireMode);
+
 public:	
 	UWeaponComponent();
 
@@ -54,16 +49,18 @@ public:
 
 	FTimerHandle ReloadTimer;
 
-	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="WeaponAttributes")
-	int32 MaxAmmo;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly,Category = "WeaponAttributes")
-	int32 CurrentAmmo;
-
 	UFUNCTION()
 	void HandleProjectileOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	FORCEINLINE EWeaponUtil GetWeaponUtil() const;
+
+	UFUNCTION(BlueprintCallable)
+	int32 GetCurrentAmmo() const;
+
+	UFUNCTION(BlueprintCallable)
+	int32 GetMaxAmmo() const;
+
+	void ChangeFireDesire(AActor* Instigator ,EFireMode FireMode,bool Desire);
 
 protected:
 	virtual void BeginPlay() override;
@@ -71,25 +68,21 @@ protected:
 public:
 
 	UFUNCTION()
-	virtual void Fire_R(AActor* Instigator);
+	void Fire(AActor* Instigator, EFireMode FireMode);
+
 	UFUNCTION()
-	virtual void Fire_L(AActor* Instigator);
+	virtual void Fire_R(AActor* Instigator, EFireMode FireMode);
+	UFUNCTION()
+	virtual void Fire_L(AActor* Instigator, EFireMode FireMode);
 
+	// Instant reload logic
 	void Reload();
-
-	FORCEINLINE float GetReloadTime() const;
-
-	FORCEINLINE void SetFireState(bool State);
-
-	FORCEINLINE bool GetFireState() const;
-
-	bool CanFire(const AActor* Instigator) const;
 
 	float CalculateHitDistance(const AActor* Instigator ,const AActor* Target) const;
 
 	FTransform CalculateCrosshair(AActor* Instigator) const;
 
-	void UpdateFireSignal(float DeltaTime);
+	float GetReloadTime() const;
 };
 
 

@@ -55,16 +55,19 @@ void AHeroController::SetupInputComponent()
 	{
 		if (InputMappingComponent)
 		{
-			TArray<FName> PressActions = {FName("FireLeft"), FName("Jump"), FName("PrimarySkill"), FName("SecondarySkill"), FName("Reload")};
+			// can be driven by data?
+			TArray<FName> PressActions = {FName("FireLeft"), FName("Jump"), FName("PrimarySkill"), FName("SecondarySkill"), FName("Reload"),FName("FireRight")};
 			InputMappingComponent->RegisterBindings(InputComponent,IE_Pressed,PressActions);
-			InputMappingComponent->GetOrCreateActionDelegate(FName("FireLeft")).AddUObject(this,&AHeroController::TryFire_L);
-			InputMappingComponent->GetOrCreateActionDelegate(FName("Jump")).AddUObject(this,&AHeroController::Jump);
-			InputMappingComponent->GetOrCreateActionDelegate(FName("PrimarySkill")).AddUObject(this,&AHeroController::TryActivatePrimary_Controller);
-			InputMappingComponent->GetOrCreateActionDelegate(FName("SecondarySkill")).AddUObject(this, &AHeroController::TryActivateSecondary_Controller);
-			InputMappingComponent->GetOrCreateActionDelegate(FName("Reload")).AddUObject(this,&AHeroController::ReloadCall);
-			TArray<FName> ReleaseAction = {FName("FireLeft")};
+			InputMappingComponent->GetOrCreateActionDelegate(FName("FireLeft"),IE_Pressed).AddUObject(this,&AHeroController::TryFire_L);
+			InputMappingComponent->GetOrCreateActionDelegate(FName("FireRight"),IE_Pressed).AddUObject(this,&AHeroController::TryFire_R);
+			InputMappingComponent->GetOrCreateActionDelegate(FName("Jump"), IE_Pressed).AddUObject(this,&AHeroController::Jump);
+			InputMappingComponent->GetOrCreateActionDelegate(FName("PrimarySkill"), IE_Pressed).AddUObject(this,&AHeroController::TryActivatePrimary_Controller);
+			InputMappingComponent->GetOrCreateActionDelegate(FName("SecondarySkill"), IE_Pressed).AddUObject(this, &AHeroController::TryActivateSecondary_Controller);
+			InputMappingComponent->GetOrCreateActionDelegate(FName("Reload"), IE_Pressed).AddUObject(this,&AHeroController::ReloadCall);
+			TArray<FName> ReleaseAction = {FName("FireLeft"),FName("FireRight") };
 			InputMappingComponent->RegisterBindings(InputComponent,IE_Released,ReleaseAction);
-			InputMappingComponent->GetOrCreateActionDelegate(FName("FireLeft")).AddUObject(this,&AHeroController::EndFire);
+			InputMappingComponent->GetOrCreateActionDelegate(FName("FireLeft"), IE_Released).AddUObject(this,&AHeroController::EndFire_L);
+			InputMappingComponent->GetOrCreateActionDelegate(FName("FireRight"), IE_Released).AddUObject(this, &AHeroController::EndFire_R);
 		}
 		InputComponent->BindAxis("Turn",this,&AHeroController::Turn);
 		InputComponent->BindAxis("LookUp",this,&AHeroController::LookUp);
@@ -150,7 +153,7 @@ void AHeroController::Right(float Value)
 		}
 		else if (PMC->IsFalling() && Value * PMC->Velocity.Y < 0.f)
 		{
-			PMC->AddForce(FVector(Value * 80000.f,0.f,0.0f));
+			PMC->AddForce(FVector(Value * -80000.f,0.f,0.0f));
 		}
 	}
 }
@@ -184,8 +187,8 @@ void AHeroController::TryFire_R()
 	{
 		if (auto WeaponComp = HeroCharacter->GetWeaponComponent())
 		{
-			WeaponComp->Fire_R(HeroCharacter);
-			bIsFiring = true;
+			WeaponComp->ChangeFireDesire(GetCharacter(),EFireMode::EFM_Auxiliary,true);
+			WeaponComp->Fire(HeroCharacter,EFireMode::EFM_Auxiliary);
 		}
 	}
 }
@@ -196,16 +199,35 @@ void AHeroController::TryFire_L()
 	{
 		if (UWeaponComponent* WeaponComp = HeroCharacter->GetWeaponComponent())
 		{
-			WeaponComp->Fire_L(HeroCharacter);
-			bIsFiring = true;
+			WeaponComp->ChangeFireDesire(GetCharacter(),EFireMode::EFM_Primary,true);
+			WeaponComp->Fire(HeroCharacter,EFireMode::EFM_Primary);
 		}
 		else UE_LOG(LogTemp, Warning, TEXT("WeaponComp FAILS"));
 	}
 }
 
-void AHeroController::EndFire()
+void AHeroController::EndFire_R()
 {
-	bIsFiring = false;
+	if (AHeroCharacter* HeroCharacter = Cast<AHeroCharacter>(GetCharacter()))
+	{
+		if (UWeaponComponent* WeaponComp = HeroCharacter->GetWeaponComponent())
+		{
+			WeaponComp->ChangeFireDesire(GetCharacter(), EFireMode::EFM_Auxiliary, false);
+		}
+		else UE_LOG(LogTemp, Warning, TEXT("WeaponComp FAILS"));
+	}
+}
+
+void AHeroController::EndFire_L()
+{
+	if (AHeroCharacter* HeroCharacter = Cast<AHeroCharacter>(GetCharacter()))
+	{
+		if (UWeaponComponent* WeaponComp = HeroCharacter->GetWeaponComponent())
+		{
+			WeaponComp->ChangeFireDesire(GetCharacter(),EFireMode::EFM_Primary, false);
+		}
+		else UE_LOG(LogTemp, Warning, TEXT("WeaponComp FAILS"));
+	}
 }
 
 void AHeroController::ReloadCall()

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Poolable.h"
 #include "SkillDataInfo.h"
 #include "WeaponComponent.h"
 #include "GameFramework/Actor.h"
@@ -10,7 +11,7 @@ DECLARE_MULTICAST_DELEGATE_EightParams(FOnSkillProjectileActivate, AProjectile*,
                                        UPrimitiveComponent*, int32, bool, const FHitResult&, const FSkillSpec&);
 
 UCLASS()
-class TRAININGROOM_API AProjectile : public AActor
+class TRAININGROOM_API AProjectile : public AActor, public IPoolable
 {
 	GENERATED_BODY()
 
@@ -25,6 +26,17 @@ class TRAININGROOM_API AProjectile : public AActor
 
 	UPROPERTY(EditAnywhere, Category = "Attributes")
 	EProjectileDamageType DamageType;
+
+	bool bInUse = false;
+
+	UPROPERTY()
+	UWeapon* OwningWeapon;
+
+	UPROPERTY()
+	FTimerHandle ExpireTimer;
+
+	UPROPERTY(EditAnywhere, Category = "ObjectPool")
+	float ExpireTime = 5.f;
 
 public:	
 	AProjectile();
@@ -44,6 +56,14 @@ protected:
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
 		bool bFromSweep, const FHitResult& SweepResult);
 
+	UFUNCTION()
+	void HandleProjectileOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
+		bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void ExpireHandler();
+
 public:	
 	virtual void Tick(float DeltaTime) override;
 
@@ -54,4 +74,13 @@ public:
 	FORCEINLINE EProjectileDamageType GetDamageType() const;
 
 	void SetIsSkill(bool IsSkill);
+
+	void SetOwningWeapon(UWeapon* Weapon);
+
+	void OnActivate_Implementation() override;
+
+	void OnDeactivate_Implementation() override;
+
+	void InitializeVelocity(FVector FireDirection);
 };
+

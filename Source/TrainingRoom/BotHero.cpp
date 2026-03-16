@@ -1,4 +1,5 @@
 #include "BotHero.h"
+#include "FSM.h"
 #include "TimerManager.h"
 #include "WeaponComponent.h"
 #include "Engine/World.h"
@@ -20,3 +21,4 @@ void ABotHero::FireRegularly()
 		true
 	);
 }
+

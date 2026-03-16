@@ -5,17 +5,35 @@
 
 void UAnnaNanoBoost::Execute(AActor* Instigator)
 {
-	AAnna* OwnerAnna = Cast<AAnna>(Instigator);
-	if (!OwnerAnna)
+	if (!Instigator) return;
+	UTargetingComponent* TargetComp = Instigator->FindComponentByClass<UTargetingComponent>();
+	AHeroCharacter* Target;
+	/*
+	if (TargetComp) 
 	{
-		UE_LOG(LogTemp,Warning,TEXT("OwnerAnna NULL"));
-		return;
+		UE_LOG(LogTemp, Display, TEXT("NANO INSTIGATOR WAY"));
+		Target = TargetComp->GetCurrentTarget();
+
 	}
-	AHeroCharacter* Target = OwnerAnna->GetTargetingComponent() ? OwnerAnna->GetTargetingComponent()->GetCurrentTarget() : nullptr;
-	if (Target && OwnerAnna->GetClass()->ImplementsInterface(UTargetingAbility::StaticClass()))
+	*/
+
+	//else
+	//{
+		UE_LOG(LogTemp, Display, TEXT("NANO CAST ANNA"));
+		AAnna* OwnerAnna = Cast<AAnna>(Instigator);
+		if (!OwnerAnna)
+		{
+			UE_LOG(LogTemp,Warning,TEXT("OwnerAnna NULL"));
+			return;
+		}
+		Target = OwnerAnna->GetTargetingComponent() ? OwnerAnna->GetTargetingComponent()->GetCurrentTarget() : nullptr;
+	//}
+
+	if (Target && Instigator->GetClass()->ImplementsInterface(UTargetingAbility::StaticClass()))
 	{
-		ITargetingAbility::Execute_ApplyEffectToTarget(OwnerAnna,Target);
 		// only execute when Target is not a nullptr
+		ITargetingAbility::Execute_ApplyEffectToTarget(Instigator, Target);
 		Super::Execute(Instigator);
 	}
+
 }

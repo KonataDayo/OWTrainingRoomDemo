@@ -17,9 +17,6 @@ class TRAININGROOM_API AHeroController : public APlayerController
 
 	UFUNCTION(BlueprintCallable)
 	void RebindPrimaryToQ_ForTestPurpose();
-
-	bool bIsFiring = false;
-
 protected:
 
 	virtual void OnPossess(APawn* InPawn) override;
@@ -61,7 +58,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void TryFire_L();
 	UFUNCTION()
-	void EndFire();
+	void EndFire_R();
+	UFUNCTION()
+	void EndFire_L();
 	UFUNCTION()
 	void ReloadCall();
 };

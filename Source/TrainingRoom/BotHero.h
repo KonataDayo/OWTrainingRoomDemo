@@ -15,6 +15,7 @@ class TRAININGROOM_API ABotHero : public AHeroCharacter
 
 protected:
 	virtual void BeginPlay() override;
+
 public:
 
 	void FireRegularly();

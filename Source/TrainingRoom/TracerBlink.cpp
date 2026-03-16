@@ -9,14 +9,14 @@ void UTracerBlink::Execute(AActor* Instigator)
 	{
 		FVector Dir = FVector::ZeroVector;
 		float ForwardValue = PC->GetInputAxisValue("MoveForward");
-		float RightValue = PC->GetInputAxisKeyValue("MoveRight");
+		float RightValue = PC->GetInputAxisValue("MoveRight");
 		Dir.X = ForwardValue;
 		Dir.Y = RightValue;
 		if (!Dir.IsNearlyZero())
 		{
 			Dir.Normalize();
 		}
-		FVector NewLocation = Instigator->GetActorLocation() + Dir * 750.f;
+		FVector NewLocation = Instigator->GetActorLocation() - (Dir * 750.f);
 		Instigator->SetActorLocation(NewLocation);
 	}
 }

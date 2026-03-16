@@ -12,7 +12,8 @@ enum class ESkillTargetType :uint8
 	STT_Single,
 	STT_AOE,
 	STT_Cone,
-	STT_Line
+	STT_Line,
+	STT_NoneProjectile
 };
 
 UENUM()
@@ -28,7 +29,8 @@ enum class ESkillTargetAffinity : uint8
 	STA_AlliesOnly,
 	STA_EnemiesOnly,
 	STA_AllExceptOwner,
-	STA_All
+	STA_All,
+	STA_OnlyOwner
 };
 
 USTRUCT(BlueprintType)
@@ -60,6 +62,7 @@ struct FSkillSpec
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	ESkillTargetAffinity SkillTargetAffinity;
 
+	FSkillSpec() = default;
 };
 
 UCLASS()

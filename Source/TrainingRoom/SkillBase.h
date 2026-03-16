@@ -1,5 +1,6 @@
 #pragma once
 #include "CoreMinimal.h"
+#include "SkillDataInfo.h"
 #include "Engine/EngineTypes.h"
 #include "SkillBase.generated.h"
 
@@ -47,6 +48,8 @@ public:
 
 	void Initialization(USkillDataAsset* SDA);
 
+	FSkillSpec GetSkillSpec() const;
+
 protected:
 
 	UPROPERTY()
@@ -55,24 +58,13 @@ protected:
 	UPROPERTY()
 	USkillDataAsset* SkillData;
 
-	/*
-	UPROPERTY(EditAnywhere,Category="Skill")
-	float CooldownTime;
-
-
-	UPROPERTY(EditAnywhere)
-	bool bStackable;
-
-	UPROPERTY(EditAnywhere,meta=(EditCondition="bStackable"))
-	int32 MaxStacks = 3;
-
-	UPROPERTY(EditAnywhere,Category="Skill")
-	ESkillSlot SkillType;
-	*/
 	int32 CurrentStacks;
 
 	UPROPERTY()
 	bool bCanExecute = true;
+
+	UPROPERTY(EditAnywhere, Category = "SkillProjectileInfo")
+	FSkillSpec SkillSpec;
 private:
 	UFUNCTION()
 	void SetSkillReady();

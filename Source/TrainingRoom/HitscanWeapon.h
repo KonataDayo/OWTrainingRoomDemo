@@ -11,4 +11,6 @@ class TRAININGROOM_API UHitscanWeapon : public UWeapon
 
 public:
 	virtual FWeaponFireResult PerformFire(AActor* Instigator,FVector MuzzleLocation, FVector FireDirection) override;
+
+	virtual void HandleHit(AActor* Instigator, const FWeaponFireResult& FireResult, UDamageSystem* DamageSystem) override;
 };

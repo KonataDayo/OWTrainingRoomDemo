@@ -34,7 +34,7 @@ class TRAININGROOM_API UTracerRecall : public USkillBase
 	UPROPERTY()
 	FVector LocationThreeSecAgo;
 
-	void Execute(AActor* Instigator) override;
+	virtual void Execute(AActor* Instigator) override;
 
 	UPROPERTY()
 	TArray<FRecallInfo> RecallInfos;

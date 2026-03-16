@@ -19,7 +19,7 @@ class TRAININGROOM_API USkillComponent : public UActorComponent
 	GENERATED_BODY()
 
 	UPROPERTY()
-	USkillFactory* SkillFactory;
+	USkillFactory*	SkillFactory;
 
 public:	
 

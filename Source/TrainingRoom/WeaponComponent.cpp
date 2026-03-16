@@ -1,7 +1,9 @@
 #include "WeaponComponent.h"
 #include "DamageStruct.h"
 #include "DamageSystem.h"
+#include "ObjectPoolSubsystem.h"
 #include "Projectile.h"
+#include "TimerManager.h"
 #include "Weapon.h"
 #include "Components/BoxComponent.h"
 #include "Components/PrimitiveComponent.h"
@@ -20,11 +22,10 @@ void UWeaponComponent::HandleProjectileOverlap(UPrimitiveComponent* OverlappedCo
 	if (!OtherActor || !OverlappedComponent) return;
 	AActor* ProjectileActor = OverlappedComponent->GetOwner();
 	if (!ProjectileActor) return;
-	// check DamageSubsystem
-	if (!CachedDamageSubsystem && GetWorld())
-	{
-		CachedDamageSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UDamageSystem>();
-	}
+	// check cached subsystems
+	if (!CachedDamageSubsystem && GetWorld()) CachedDamageSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UDamageSystem>();
+	if (!CachedObjectPoolSubsystem && GetWorld()) CachedObjectPoolSubsystem = GetWorld()->GetSubsystem<UObjectPoolSubsystem>();
+
 	if (AActor* Instigator = ProjectileActor->GetInstigator())
 	{
 		// avoid overlapping with ourselves
@@ -32,6 +33,7 @@ void UWeaponComponent::HandleProjectileOverlap(UPrimitiveComponent* OverlappedCo
 		{
 			float HitDistance = CalculateHitDistance(Instigator,OtherActor);
 			FDamageData thisData(Instigator,Weapon,HitDistance);
+			CachedObjectPoolSubsystem->Return(ProjectileActor);
 			CachedDamageSubsystem->ApplyDamage(Instigator,OtherActor,thisData);
 		}
 	}
@@ -43,30 +45,115 @@ EWeaponUtil UWeaponComponent::GetWeaponUtil() const
 	return WeaponUtil;
 }
 
+int32 UWeaponComponent::GetCurrentAmmo() const
+{
+	if (!Weapon) return -1;
+	return Weapon->GetCurrentAmmo();
+}
+
+int32 UWeaponComponent::GetMaxAmmo() const
+{
+	if (!Weapon) return -1;
+	return Weapon->GetMaxAmmo();
+}
+
+void UWeaponComponent::ChangeFireDesire(AActor* Instigator, EFireMode FireMode, bool Desire)
+{
+	if (!Weapon) return;
+
+	FFireState* FireState = Weapon->GetFireState(FireMode);
+	if (!FireState)
+	{
+#if WITH_EDITOR
+		UE_LOG(LogTemp, Error, TEXT("[%s] Failed to get fire state for mode %d!"), *GetName(),(int)FireMode);
+#endif
+		return;
+	}
+	FireState->bWantFire = Desire;
+	// Hit fire button and allow to fire at the moment, then fire immediately
+	if (FireState->bWantFire && FireState->bCanFire) Fire(Instigator,FireMode);
+}
+
 void UWeaponComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	if (!Weapon && WeaponClass)
 	{
 		Weapon = NewObject<UWeapon>(this,WeaponClass);
+		Weapon->Initialize();
 	}
-	if (!CachedDamageSubsystem && GetWorld())
+	UWorld* World = GetWorld();
+	if (!World) return;
+	if (!CachedDamageSubsystem && World)
 	{
-		CachedDamageSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UDamageSystem>();
+		CachedDamageSubsystem = World->GetGameInstance()->GetSubsystem<UDamageSystem>();
+	}
+	if (!CachedObjectPoolSubsystem)
+	{
+		CachedObjectPoolSubsystem = World->GetSubsystem<UObjectPoolSubsystem>();
 	}
 }
 
-void UWeaponComponent::Fire_R(AActor* Instigator)
+void UWeaponComponent::OnFireCooldownFinished(AActor* Instigator, EFireMode FireMode)
 {
-
+	if (!Weapon) return;
+	if (FFireState* FireState = Weapon->GetFireState(FireMode))
+	{
+		FireState->bCanFire = true;
+		if (FireState->bWantFire) Fire(Instigator,FireMode);
+	}
 }
 
-void UWeaponComponent::AmmoManage()
+void UWeaponComponent::Fire(AActor* Instigator, EFireMode FireMode)
 {
-	CurrentAmmo--;
-	bCanFire = false;
-	// reset Fire
-	TimeSinceLastFire = 0.f;
+	if (!Instigator || !Weapon) return;
+	// Fire Timer
+	auto FireState = Weapon->GetFireState(FireMode);
+	UWorld* World = GetWorld();
+	if (!FireState || !World)
+	{
+#if WITH_EDITOR
+		UE_LOG(LogTemp,Error,TEXT("[%s] Failed to get fire state, please check the initialization function of this weapon/or failed to GetWorld()"),*Weapon->GetName());
+#endif
+		return;
+	}
+	// Can fire and wanna fire
+	if (!FireState->bCanFire || !FireState->bWantFire)
+	{
+		UE_LOG(LogTemp,Warning,TEXT("[%s]Cannot Fire or don't wanna fire right now... [STATE]CanFire: %d, WantFire: %d"),*GetName(),FireState->bCanFire,FireState->bWantFire);
+		return;
+	}
+
+	switch (FireMode)
+	{
+		case EFireMode::EFM_Primary:
+			Fire_L(Instigator, FireMode);
+			break;
+		case EFireMode::EFM_Auxiliary:
+			Fire_R(Instigator, FireMode);
+			break;
+		default:
+#if WITH_EDITOR
+			UE_LOG(LogTemp,Warning,TEXT("[%s] Fire Function cannot find FireMode"),*GetName());
+#endif
+			break;
+	}
+	// right after Fire function(CanFire statement inside Fire function)
+	FireState->bCanFire = false;
+
+	FTimerDelegate FireDelegate;
+	FireDelegate.BindUObject(this,&UWeaponComponent::OnFireCooldownFinished,Instigator,FireMode);
+	World->GetTimerManager().SetTimer(
+		FireState->FireTimer,
+		FireDelegate,
+		FireState->FireInterval,
+		false // Whether loop or not is decided by (func)ResetCanFire
+	);
+}
+
+void UWeaponComponent::AmmoManage(EFireMode FireMode)
+{
+	Weapon->ConsumeAmmoForMode(FireMode);
 }
 
 FTransform UWeaponComponent::CalculateCrosshair(AActor* Instigator) const
@@ -91,21 +178,11 @@ FTransform UWeaponComponent::CalculateCrosshair(AActor* Instigator) const
 	return FTransform::Identity;
 }
 
-void UWeaponComponent::UpdateFireSignal(float DeltaTime)
-{
-	if (bCanFire == true) return;
-	if (TimeSinceLastFire < FireInterval) TimeSinceLastFire += DeltaTime;
-	else if (TimeSinceLastFire >= FireInterval)
-	{
-		bCanFire = true;
-	}
-}
-
 // Encapsulated Algorithm Method
-void UWeaponComponent::Fire_L(AActor* Instigator)
+void UWeaponComponent::Fire_L(AActor* Instigator, EFireMode FireMode)
 {
-	if (!CanFire(Instigator)) return;
-	AmmoManage();
+	if (!Weapon->CanFire(Instigator,FireMode)) return;
+	Weapon->ConsumeAmmoForMode(FireMode);
 	FWeaponFireResult FireResult;
 	FTransform CrosshairData = CalculateCrosshair(Instigator);
 	// Fire function, logic in subordinate classes
@@ -113,58 +190,22 @@ void UWeaponComponent::Fire_L(AActor* Instigator)
 	ProcessHit(Instigator,FireResult);
 }
 
+void UWeaponComponent::Fire_R(AActor* Instigator, EFireMode FireMode)
+{
+	if (!Weapon->CanFire(Instigator, FireMode)) return;
+}
+
 void UWeaponComponent::ProcessHit(AActor* Instigator,FWeaponFireResult Result)
 {
 	if (!Instigator) return;
-	switch (Result.WeaponFireType)
-	{
-		case EWeaponFireType::WFT_Projectile:
-		{
-			if (auto HB = Result.Projectile->GetHitBox())
-			{
-				HB->OnComponentBeginOverlap.AddDynamic(this,&UWeaponComponent::HandleProjectileOverlap);
-				//HB->OnComponentHit.AddDynamic(this,&UWeaponComponent::HandleProjectileHit);
-			}
-			break;
-		}
-		case EWeaponFireType::WFT_Hitscan:
-		{
-			for (const FHitResult& R : Result.HitResults)
-			{
-				AActor* Target = R.GetActor();
-				float HitDistance = CalculateHitDistance(Instigator,Target);
-				FDamageData DamageInfo(Instigator,Weapon,HitDistance);
-				CachedDamageSubsystem->ApplyDamage(Instigator,Target,DamageInfo);
-				break;
-			}
-		}
-	}
+	Weapon->HandleHit(Instigator,Result,CachedDamageSubsystem);
 }
 
 void UWeaponComponent::Reload()
 {
-	CurrentAmmo = MaxAmmo;
+	if (!Weapon) return;
+	Weapon->Reload();
 	UE_LOG(LogTemp,Warning,TEXT("Reloaded"));
-}
-
-float UWeaponComponent::GetReloadTime() const
-{
-	return ReloadTime;
-}
-
-void UWeaponComponent::SetFireState(bool State)
-{
-	bCanFire = State;
-}
-
-bool UWeaponComponent::GetFireState() const
-{
-	return bCanFire;
-}
-
-bool UWeaponComponent::CanFire(const AActor* Instigator) const
-{
-	return bCanFire && CurrentAmmo > 0 && Instigator && CachedDamageSubsystem && Weapon;
 }
 
 float UWeaponComponent::CalculateHitDistance(const AActor* Instigator,const AActor* Target) const
@@ -174,3 +215,8 @@ float UWeaponComponent::CalculateHitDistance(const AActor* Instigator,const AAct
 	return FVector::Dist(Instigator->GetActorLocation(), Target->GetActorLocation());
 }
 
+float UWeaponComponent::GetReloadTime() const
+{
+	if (!Weapon) return -1.f;
+	return Weapon->GetReloadTime();
+}

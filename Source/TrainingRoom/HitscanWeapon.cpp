@@ -6,9 +6,11 @@
 #include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h"
 #include "HeroCharacter.h"
+#include "DamageSystem.h"
 
 FWeaponFireResult UHitscanWeapon::PerformFire(AActor* Instigator,FVector MuzzleLocation, FVector FireDirection)
 {
+	// TODO: 1.CONTINUOUS FIRE MISSING? 2.SKILLS FAIL TO EXECUTE(NO RECALL UPDATE INFO)
 	Super::PerformFire(Instigator,MuzzleLocation, FireDirection);
 	FWeaponFireResult Result;
 	if (!Instigator)
@@ -51,4 +53,17 @@ FWeaponFireResult UHitscanWeapon::PerformFire(AActor* Instigator,FVector MuzzleL
 	);
 #endif
 	return Result;
+}
+
+void UHitscanWeapon::HandleHit(AActor* Instigator, const FWeaponFireResult& FireResult, UDamageSystem* DamageSystem)
+{
+	Super::HandleHit(Instigator, FireResult, DamageSystem);
+	for (const FHitResult& R : FireResult.HitResults)
+	{
+		AActor* Target = R.GetActor();
+		float HitDistance = CalculateDistance(Instigator, Target);
+		FDamageData DamageInfo(Instigator, this, HitDistance);
+		CachedDamageSubsystem->ApplyDamage(Instigator, Target, DamageInfo);
+		break;
+	}
 }

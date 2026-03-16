@@ -14,7 +14,7 @@ class TRAININGROOM_API UAnnaBottle : public USkillBase
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere,Category = "Projectile")
 	TSubclassOf<class AProjectile> BottleClass;
 
 protected:

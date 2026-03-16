@@ -31,6 +31,11 @@ void USkillBase::Initialization(USkillDataAsset* SDA)
 	SkillData = SDA;
 }
 
+FSkillSpec USkillBase::GetSkillSpec() const
+{
+	return SkillSpec;
+}
+
 void USkillBase::Execute(AActor* Instigator)
 {
 	UE_LOG(LogTemp,Warning,TEXT("execute"));

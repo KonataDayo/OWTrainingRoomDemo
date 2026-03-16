@@ -69,7 +69,7 @@ void AHeroCharacter::RespawningReset()
 {
 	if (!WeaponComponent || !SkillComponent || !HealthComponent) return;
 	HealthComponent->ResetHP();
-	WeaponComponent->CurrentAmmo = WeaponComponent->MaxAmmo;
+	WeaponComponent->Reload();
 	for(auto skill : SkillComponent->Skills)
 	{
 		auto SkillPtr = skill.Value;
@@ -132,6 +132,7 @@ void AHeroCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	if (!HeroController) HeroController = Cast<AHeroController>(GetController());
+	/*
 	if (HealthBarWidgetComponent)
 	{
 		if (auto HealthBar = HealthBarWidgetComponent->GetOrCreateWidget(this))
@@ -141,12 +142,13 @@ void AHeroCharacter::BeginPlay()
 		}
 		else UE_LOG(LogTemp,Error,TEXT("Health Bar is NULL"));
 	}
+	*/
 	if (WeaponComponentClass && !WeaponComponent)
 	{
 		WeaponComponent = NewObject<UWeaponComponent>(this,WeaponComponentClass);
 		WeaponComponent->RegisterComponent();
 	}
-	if (InfoDisplay && IsLocallyControlled())
+	if (InfoDisplay && IsPawnControlled())
 	{
 		UUserWidget* UI = CreateWidget<UUserWidget>(GetWorld(), InfoDisplay);
 		if (auto DisplayUI = Cast<UDisplay>(UI))
@@ -167,16 +169,6 @@ void AHeroCharacter::PostInitializeComponents()
 		UE_LOG(LogTemp, Warning, TEXT("POST INIT HERO CONTROLLER SET"));
 	}
 }
-
-// Called every frame
-void AHeroCharacter::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-	if (WeaponComponent)
-	{
-		WeaponComponent->UpdateFireSignal(DeltaTime);
-	}
-} 
 
 void AHeroCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
